@@ -1,0 +1,6 @@
+@RtmsApp_HostAddress = http://localhost:5197
+
+GET {{RtmsApp_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

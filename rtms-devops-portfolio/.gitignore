@@ -1,0 +1,56 @@
+# ===============================
+# General
+# ===============================
+.DS_Store
+*.log
+*.tmp
+*.swp
+.env
+.env.*
+
+# ===============================
+# Terraform
+# ===============================
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.*
+terraform/crash.log
+terraform/*.tfvars
+terraform/*.tfvars.json
+
+# ===============================
+# Ansible
+# ===============================
+*.retry
+ansible/inventory.ini  # contains your EC2 IP & key path, don’t commit
+
+# ===============================
+# SSH / Keys
+# ===============================
+*.pem
+*.key
+*.pub
+
+# ===============================
+# Dotnet
+# ===============================
+app/**/bin/
+app/**/obj/
+app/**/out/
+app/**/RtmsApp.csproj.user
+
+# Visual Studio / Rider / VSCode caches
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# ===============================
+# Docker
+# ===============================
+**/.dockerignore
+**/Dockerfile.*~
+
