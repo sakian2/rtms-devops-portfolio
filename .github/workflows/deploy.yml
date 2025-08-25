@@ -1,0 +1,55 @@
+name: CI-CD
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'app/**'
+      - 'k8s/**'
+      - '.github/workflows/deploy.yml'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push image
+        run: |
+          IMAGE=ghcr.io/${{ github.repository_owner }}/rtms-app:latest
+          docker build -t $IMAGE ./app/RtmsApp
+          docker push $IMAGE
+
+      - name: Copy manifests
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "k8s/*"
+          target: "~/manifests"
+
+      - name: Apply manifests remotely
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            sudo kubectl apply -f ~/manifests/namespace.yaml
+            sudo kubectl apply -f ~/manifests/deployment.yaml
+            sudo kubectl apply -f ~/manifests/service.yaml
+            sudo kubectl apply -f ~/manifests/ingress.yaml
+            sudo kubectl -n portfolio rollout status deploy/portfolio-web
+

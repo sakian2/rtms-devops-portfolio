@@ -1,0 +1,47 @@
+---
+- hosts: k3s
+  become: yes
+  tasks:
+    - name: Install base deps
+      apt:
+        name: ["curl", "apt-transport-https", "ca-certificates"]
+        update_cache: yes
+        state: present
+
+    - name: Disable swap (k8s best practice; harmless if none)
+      command: swapoff -a
+      register: swapoff
+      changed_when: swapoff.rc == 0
+      failed_when: false
+
+    - name: Ensure swap is disabled on boot
+      replace:
+        path: /etc/fstab
+        regexp: '(^.*\s+swap\s+.*$)'
+        replace: '# \1'
+      register: fstab_swap
+      failed_when: false
+
+    - name: Install k3s (server, no Traefik)
+      shell: |
+        curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--disable traefik" sh -
+      args:
+        creates: /usr/local/bin/k3s
+
+    - name: Symlink kubectl to k3s
+      file:
+        src: /usr/local/bin/k3s
+        dest: /usr/local/bin/kubectl
+        state: link
+        force: yes
+
+    - name: Make kubeconfig world-readable (simple for demo)
+      file:
+        path: /etc/rancher/k3s/k3s.yaml
+        mode: '0644'
+
+    - name: Install NGINX Ingress Controller (bare-metal hostPorts)
+      shell: |
+        KUBECONFIG=/etc/rancher/k3s/k3s.yaml \
+        kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/baremetal/deploy.yaml
+
